@@ -22,18 +22,24 @@
         <h2>Overview</h2>
         <p>Assignment 3-1 was a massive exploration of ray tracing and its various techniques.</p>
         <p>Part 1 is about generating rays from the camera to a place in the world and checking for intersections with triangles and spheres.</p>
-        <p>Part 2 is about making the checks for intersections more efficient by using a Bounding Volume Hierarchy to divide
-        our search space nearly in half every time, which would be closer to a O(logn) runtime instead of O(n).</p>
-        <p>Part 3 is about taking those rays and intersections, and actually calculating the color that should be presented at a pixel.
-        We use two methods, hemisphere sampling and importance sampling. Hemispere uses random directions in a hemisphere, whereas
-        importance samples directly in each light's direction.</p>
+        <p>
+            Part 2 is about making the checks for intersections more efficient by using a Bounding Volume Hierarchy to divide
+            our search space nearly in half every time, which would be closer to a O(logn) runtime instead of O(n).
+        </p>
+        <p>
+            Part 3 is about taking those rays and intersections, and actually calculating the color that should be presented at a pixel.
+            We use two methods, hemisphere sampling and importance sampling. Hemispere uses random directions in a hemisphere, whereas
+            importance samples directly in each light's direction.
+        </p>
         <p>Part 4 expands upon part 3 by incorporating more than 1 bounce into our images.</p>
         <p>Part 5 then helps with efficiency by early terminating our sampling if the color of the pixel is likely to converge.</p>
-        <p>On a very high level, many of the problems resided in the fact that we must visually debug our code for these assignments.
-        I found myself noticing differences between my images and the spec's example images, but not knowing what the issue was. For
-        example, in part 3 I had an issue where I was observing light on the ceiling, but I hadn't implemented more than one light bounce
-        yet. For whatever reason, I resolved my issue by correcting my f function when calculating the diffuse reflectance. I 
-        admittedly still don't know what was wrong or why it caused the issue I was seeing.</p>
+        <p>
+            On a very high level, many of the problems resided in the fact that we must visually debug our code for these assignments.
+            I found myself noticing differences between my images and the spec's example images, but not knowing what the issue was. For
+            example, in part 3 I had an issue where I was observing light on the ceiling, but I hadn't implemented more than one light bounce
+            yet. For whatever reason, I resolved my issue by correcting my f function when calculating the diffuse reflectance. I
+            admittedly still don't know what was wrong or why it caused the issue I was seeing.
+        </p>
 
         <h2 align="middle">Part 1: Ray Generation and Intersection</h2>
         <ul>
@@ -137,7 +143,7 @@
             </li>
             <ul>
                 <li>
-                    Without BVH acceleration, it takes about 38 seconds to render the cow.dae on my machine with 8 threads. 
+                    Without BVH acceleration, it takes about 38 seconds to render the cow.dae on my machine with 8 threads.
                     With, it took 0.14 seconds.
                     We bring the intersection tests per ray down from 725 to 2.4.
                 </li>
@@ -227,9 +233,9 @@
                 <li>
                     Lighting sampling should be much more efficient since there should be less wasted computation, as
                     uniform hemisphere sampling casts rays in random directions as opposed to directly to light sources. The time
-                    difference shouldn't be massive assuming the same amount of samples. It's that it will take more samples with 
+                    difference shouldn't be massive assuming the same amount of samples. It's that it will take more samples with
                     uniform hemisphere sampling to get a similar looking picture since its rays can be wasted. CBbunny_H_64_32 is
-                    only slightly more grainy than bunny_64_32, which shows that the uniform hemisphere sampling can converge. The 
+                    only slightly more grainy than bunny_64_32, which shows that the uniform hemisphere sampling can converge. The
                     difference is between CBbunny_H_16_8 and bunny_1_1. Both have noise, however the uniform sampling one has noise
                     all over, whereas the importance sampling one has its noise concentrated where shadows would be. The importance
                     sampling one also did it in far fewer samples.
@@ -288,12 +294,16 @@
                 Use 1024 samples per pixel. (You will have to edit PathTracer::at_least_one_bounce_radiance(...) in your code to generate
                 these views.)
             </li>
-            <ul><li>I figured this scene should be pretty interesting since there are multiple objects in the scene to block 
-                light. All the images look right to me, but just to spell it out, the direct lighting image shows where light would be 
-                after one bounce (plus the light going directly into the camera at 0 bounces). The indirect lighting image shows how 
-                light can bounce "around" objects. We can see in the global lighting version that the dark shadows in the direct
-                lighting version are now lighter, since the indirect lighting has now been incorporated. We can also see any light
-                that bounced off a surface and then towards the ceiling, since the ceiling is now lit up.</li></ul>
+            <ul>
+                <li>
+                    I figured this scene should be pretty interesting since there are multiple objects in the scene to block
+                    light. All the images look right to me, but just to spell it out, the direct lighting image shows where light would be
+                    after one bounce (plus the light going directly into the camera at 0 bounces). The indirect lighting image shows how
+                    light can bounce "around" objects. We can see in the global lighting version that the dark shadows in the direct
+                    lighting version are now lighter, since the indirect lighting has now been incorporated. We can also see any light
+                    that bounced off a surface and then towards the ceiling, since the ceiling is now lit up.
+                </li>
+            </ul>
             <div align="center">
                 <table style="width=100%">
                     <tr>
@@ -318,11 +328,15 @@
                 For CBbunny.dae, compare rendered views with max_ray_depth set to 0, 1, 2, 3, and 100 (the -m flag). Use 1024 samples
                 per pixel.
             </li>
-            <ul><li>These images illustrate a similar point to the previous section. As we increase bounces of light, we end up with
-                softer shadows and light on the ceiling. Beyond 2 bounces however, it's hard to see any difference. The shadows should
-                become softer, but Russian Roulette keeps the number of bounces relatively low. With a max_ray_depth of 100,
-                there would only be a probability of (6/10)^100 (in my implementation) of actually reaching the 100th bounce due to the recursive application
-                of the continuation/termination probability.</li></ul>
+            <ul>
+                <li>
+                    These images illustrate a similar point to the previous section. As we increase bounces of light, we end up with
+                    softer shadows and light on the ceiling. Beyond 2 bounces however, it's hard to see any difference. The shadows should
+                    become softer, but Russian Roulette keeps the number of bounces relatively low. With a max_ray_depth of 100,
+                    there would only be a probability of (6/10)^100 (in my implementation) of actually reaching the 100th bounce due to the recursive application
+                    of the continuation/termination probability.
+                </li>
+            </ul>
             <div align="center">
                 <table style="width=100%">
                     <tr>
@@ -357,12 +371,16 @@
                 Pick one scene and compare rendered views with various sample-per-pixel rates, including at least 1, 2, 4, 8, 16, 64,
                 and 1024. Use 4 light rays.
             </li>
-            <ul><li>If you're an impatient person, it'd be hard to justify the amount of time it takes to achieve the best quality
-                seen at the bottom here, though it's impossible to deny the increase in visual quality. It clearly requires a lot of
-                samples-per-pixel to get a quality looking image. The amount of time spent and the increase in quality don't increase 
-                linearly, in my opinion. It takes exponentially longer for an exponential amount of samples (duh). However, I'd argue that
-                the quality increase from 64 samples to 1024 samples is noticeable, but doesn't
-                provide an exponential increase in quality.</li></ul>
+            <ul>
+                <li>
+                    If you're an impatient person, it'd be hard to justify the amount of time it takes to achieve the best quality
+                    seen at the bottom here, though it's impossible to deny the increase in visual quality. It clearly requires a lot of
+                    samples-per-pixel to get a quality looking image. The amount of time spent and the increase in quality don't increase
+                    linearly, in my opinion. It takes exponentially longer for an exponential amount of samples (duh). However, I'd argue that
+                    the quality increase from 64 samples to 1024 samples is noticeable, but doesn't
+                    provide an exponential increase in quality.
+                </li>
+            </ul>
             <div align="center">
                 <table style="width=100%">
                     <tr>
@@ -408,13 +426,17 @@
         <h2 align="middle">Part 5: Adaptive Sampling</h2>
         <ul>
             <li>Walk through your implementation of the adaptive sampling.</li>
-            <ul><li>Essentially what I do is keep a running sum of every sample's illuminance and a sum of the illuminance squared
-                (s1 and s2 respectively from the spec). With those values, we can calculate the mean and variance in order to then
-                calculate each pixel's convergence. Once a pixel has converged (come close enough to its proper ending value) 
-                with 95% confidence, we will terminate the sampling early, in order to save computation time. Also as suggested
-                by the spec, I only check the convergence of a pixel every "samplesPerBatch" samples so we waste less compute power computing
-                "when to stop" instead of computing the actual work of sampling. Finally, that early number of samples is saved to
-                the sampleCountBuffer so we can create a heatmap of the relative samples needed for each pixel in the image.</li></ul>
+            <ul>
+                <li>
+                    Essentially what I do is keep a running sum of every sample's illuminance and a sum of the illuminance squared
+                    (s1 and s2 respectively from the spec). With those values, we can calculate the mean and variance in order to then
+                    calculate each pixel's convergence. Once a pixel has converged (come close enough to its proper ending value)
+                    with 95% confidence, we will terminate the sampling early, in order to save computation time. Also as suggested
+                    by the spec, I only check the convergence of a pixel every "samplesPerBatch" samples so we waste less compute power computing
+                    "when to stop" instead of computing the actual work of sampling. Finally, that early number of samples is saved to
+                    the sampleCountBuffer so we can create a heatmap of the relative samples needed for each pixel in the image.
+                </li>
+            </ul>
             <li>Pick one scene and render it with at least 2048 samples per pixel. Show a good sampling rate image with clearly visible differences in sampling rate over various regions and pixels. Include both your sample rate image, which shows your how your adaptive sampling changes depending on which part of the image you are rendering, and your noise-free rendered result. Use 1 sample per light and at least 5 for max ray depth.</li>
             <div align="center">
                 <table style="width=100%">
@@ -431,6 +453,8 @@
                 </table>
             </div>
         </ul>
+        <br /><br />
+        <a href="https://cal-cs184-student.github.io/sp22-project-webpages-18jwong/proj3-1/index.html">Link to Project 3 webpage</a>
 
     </div>
 </body>
