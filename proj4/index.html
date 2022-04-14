@@ -1,7 +1,428 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 4 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 284A Cloth Sim</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 284A: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Jordan Wong, CS284-??</h2>
+
+<br><br>
+
+    <div>
+
+        <h2 align="middle">Overview</h2>
+        <p>This project essentially covers everything you need to know to replicate Half-Life: Alyx's liquid in bottles shaders.
+        I implemented a cloth simulation made up of a grid of point masses and springs. This cloth can accurately collide with 
+        other objects, as well as itself. Finally, the project also goes into GPU shaders through GLSL. They allow for quick
+        calculations regarding the coloring of pixels on your screen due to objects in the scene. There are tons of directions to go in 
+        with shaders. I implemented mirrors, textures, and Blinn-Phong shading. My biggest take away from this project is that
+        it's actually not as complicated to simulate cloths and write shaders as I thought it previously was. Although they're not
+        easy, it really is possible for someone like me to recreate the realistic shader effects present in Half-Life: Alyx.</p>
+
+        <h2 align="middle">Part I: Masses and springs</h2>
+        <ul>
+            <li><i>Take some screenshots of scene/pinned2.json from a viewing angle where you can clearly see the cloth wireframe to show the structure of your point masses and springs.</i></li>
+            <li><i>Show us what the wireframe looks like (1) without any shearing constraints, (2) with only shearing constraints, and (3) with all constraints.</i></li>
+            <ul>
+                <li>
+                    Essentially what I did for this part was create a grid of points based on given parameters and connect them in certain ways
+                    with springs. Structural springs are connected to the left, right, up, and down. Shearing springs are connected diagonally.
+                    Bending springs are connected to the left, right, up, and down, but 2 points away instead of 1, though this is hard to
+                    visually demonstrate since they overlap.
+                </li>
+            </ul>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part1_pinned2_noshear.png" width="480px" />
+                            <figcaption align="middle">no shear</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part1_pinned2_onlyshear.png" width="480px" />
+                            <figcaption align="middle">only shear</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part1_pinned2.png" width="480px" />
+                            <figcaption align="middle">all enabled</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </ul>
+        <h2 align="middle">Part II: Simulation via numerical integration</h2>
+        <ul>
+            <li><i>Experiment with some the parameters in the simulation. To do so, pause the simulation at the start with P, modify the values of interest, and then resume by pressing P again. You can also restart the simulation at any time from the cloth's starting position by pressing R.</i></li>
+            <ul>
+                <li><i>Describe the effects of changing the spring constant ks; how does the cloth behave from start to rest with a very low ks? A high ks?</i></li>
+                <ul>
+                    <li>
+                        Increasing the spring constant ks increases the stiffness of the cloth and its resistance to changing its shape.
+                        With a low ks, the cloth acts much like a loosely connected chainmail and loses its shape very easily, only being
+                        connected by the springs between points. With a high ks, the distances between point masses are kept much more
+                        strictly. It falls just as quickly, but the shape of the cloth stays much more stiff, more like paper.
+                    </li>
+                </ul>
+                <div align="center">
+                    <table style="width=100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part2_high_ks.png" width="480px" />
+                                <figcaption align="middle">high ks</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part2_low_ks.png" width="480px" />
+                                <figcaption align="middle">low ks</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <li><i>What about for density?</i></li>
+                <ul>
+                    <li>
+                        Increasing density reduces the relative strength the springs. A much higher density causes the springs to stretch
+                        more and the cloth to be very flat. A low density allows the creases at the top to stick further out, as we'd expect
+                        from a real cloth.
+                    </li>
+                </ul>
+                <div align="center">
+                    <table style="width=100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part2_high_dens.png" width="480px" />
+                                <figcaption align="middle">high density</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part2_low_dens.png" width="480px" />
+                                <figcaption align="middle">low density</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <li><i>What about for damping?</i></li>
+                <ul>
+                    <li>
+                        Damping also has a large effect on the cloth's resistance to changing its shape. Increasing damping increases the
+                        simulated friction and also its resistance to bending. A high damping percentage looks as if we've slowed down time and
+                        the cloth is very large/has a lot of air resistance. A low damping percentage allows the cloth the bounce around much more
+                        easily, as the bending springs have less affect and less hold on retaining the original shape of the cloth. I think the
+                        difference between changing damping and ks is that damping only effects the bending springs, but ks affects all springs.
+                        This means that changing ks also affects compression of the cloth, as opposed to just pulling it apart.
+                    </li>
+                </ul>
+                <div align="center">
+                    <table style="width=100%">
+                        <tr>
+                            <td align="middle">
+                                <img src="images/part2_high_damp.png" width="480px" />
+                                <figcaption align="middle">high damping</figcaption>
+                            </td>
+                            <td align="middle">
+                                <img src="images/part2_low_damp.png" width="480px" />
+                                <figcaption align="middle">low damping</figcaption>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <li><i>For each of the above, observe any noticeable differences in the cloth compared to the default parameters and show us some screenshots of those interesting differences and describe when they occur.</i></li>
+            </ul>
+            <li><i>Show us a screenshot of your shaded cloth from scene/pinned4.json in its final resting state! If you choose to use different parameters than the default ones, please list them.</i></li>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part2_def.png" width="480px" />
+                            <figcaption align="middle">default settings</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </ul>
+        <h2 align="middle">Part III: Handling collisions with other objects</h2>
+        <ul>
+            <li><i>Show us screenshots of your shaded cloth from scene/sphere.json in its final resting state on the sphere using the default ks = 5000 as well as with ks = 500 and ks = 50000. Describe the differences in the results.</i></li>
+            <ul>
+                <li>
+                    As expected, a weaker spring constant <i>ks</i> results in a more flexible cloth that can more easily drape
+                    over the sphere. A stronger spring constatn results in a stiffer, but paper like cloth.
+                </li>
+            </ul>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part3_sphere_500.png" width="480px" />
+                            <figcaption align="middle">ks = 500</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part3_sphere_5000.png" width="480px" />
+                            <figcaption align="middle">ks = 5000</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part3_sphere_50000.png" width="480px" />
+                            <figcaption align="middle">ks = 50000</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <li><i>Show us a screenshot of your shaded cloth lying peacefully at rest on the plane. If you haven't by now, feel free to express your colorful creativity with the cloth! (You will need to complete Part 5 first to show custom colors for anything but the "Wireframe" material.)</i></li>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part3_plane.png" width="480px" />
+                            <figcaption align="middle">cloth lying flat on plane using Phong settings</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </ul>
+        <h2 align="middle">Part IV: Handling self-collisions</h2>
+        <ul>
+            <li><i>Show us at least 3 screenshots that document how your cloth falls and folds on itself, starting with an early, initial self-collision and ending with the cloth at a more restful state (even if it is still slightly bouncy on the ground).</i></li>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part4_fall_1.png" width="480px" />
+                            <figcaption align="middle">first collision (under default params)</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part4_fall_2.png" width="480px" />
+                            <figcaption align="middle">middle</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part4_fall_3.png" width="480px" />
+                            <figcaption align="middle">end</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <li><i>Vary the density as well as ks and describe with words and screenshots how they affect the behavior of the cloth as it falls on itself.</i></li>
+            <ul>
+                <li>The high density, low ks images don't look very realistic and I'm unsure if this is because of my code or the 
+                specified implementation. </li>
+                <li>Both a high density and a low ks would result in something similar to what we're seeing in my images. A high density
+                would cause more gravitational pull on each point mass, so the cloth would have more trouble holding its shape. Likewise
+                when we have a low ks, the springs will have a harder time resisting gravity and cave on itself. Why it caves in such a
+                weird shape is beyond me though. Likely due to the random z initialization we did in part 1, but my results are
+                pretty consistent in shape when repeated, so maybe not.</li>
+                <li>Both the low density and the high ks cloth very easily fold into a nice pattern. That's probably due to the
+                lowered required resistance due to density and the increased resistance from the springs, respectively. This
+                allows the cloth to retain its shape better.</li>
+            </ul>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part4_dens_high.png" width="480px" />
+                            <figcaption align="middle">high density</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part4_dens_low.png" width="480px" />
+                            <figcaption align="middle">low density</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part4_ks_high.png" width="480px" />
+                            <figcaption align="middle">high ks</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part4_ks_low.png" width="480px" />
+                            <figcaption align="middle">low ks</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </ul>
+
+        <h2 align="middle">Part V: Shaders</h2>
+        <ul>
+            <li><i>Explain in your own words what is a shader program and how vertex and fragment shaders work together to create lighting and material effects.</i></li>
+            <ul>
+                <li>
+                    A shader program essentially is a parallelizable set of code that can be run on GPUs to speed up the coloring of
+                    pixels. Vertex shaders essentially figure out where normal vectors' positions are and where they point, and ultimately
+                    change those positions too through gl_position. Vertex shaders pass information to the fragment shaders through variables
+                    such as uniforms and varyings. The fragment shader then (for our purposes) are doing work to essentially figure
+                    out how to color the pixels on our screens.
+                </li>
+            </ul>
+            <li><i>Explain the Blinn-Phong shading model in your own words. Show a screenshot of your Blinn-Phong shader outputting only the ambient component, a screen shot only outputting the diffuse component, a screen shot only outputting the specular component, and one using the entire Blinn-Phong model.</i></li>
+            <ul>
+                <li>
+                    Blinn-Phong has 3 components, ambient, diffuse, and spectral. Essentially ambient is the base light applied to the
+                    entire object or scene. Diffuse is light on an object that doesn't account for the viewing angle, only the light source(s)
+                    angle. Spectral has to do with the shiny highlights and this does depend on the viewing angle.
+                </li>
+            </ul>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_phong_amb.png" width="480px" />
+                            <figcaption align="middle">only ambient light (ka=0.1)</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_phong_dif.png" width="480px" />
+                            <figcaption align="middle">only diffuse light (kd=1)</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_phong_spe.png" width="480px" />
+                            <figcaption align="middle">only spectral light (ks=0.5, p=20)</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_phong_all.png" width="480px" />
+                            <figcaption align="middle">ambient + diffuse + spectral</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <li><i>Show a screenshot of your texture mapping shader using your own custom texture by modifying the textures in /textures/.</i></li>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_text.png" width="480px" />
+                            <figcaption align="middle">texture = ghost from Mario</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <li><i>Show a screenshot of bump mapping on the cloth and on the sphere. Show a screenshot of displacement mapping on the sphere. Use the same texture for both renders. You can either provide your own texture or use one of the ones in the textures directory, BUT choose one that's not the default texture_2.png. Compare the two approaches and resulting renders in your own words. Compare how your the two shaders react to the sphere by changing the sphere mesh's coarseness by using -o 16 -a 16 and then -o 128 -a 128.</i></li>
+            <ul>
+                <li>
+                    The only difference between the two approaches is that displacement actually moves the vertex locations. Both attempt
+                    to create a visual depth through the coloring of the pixels.
+                    I think both look pretty good. It is crazy to me though, how good the displacement shader can be. I'd expect either
+                    the displacements to be super inaccurate or not very prominent, but it actually looks relatively good.
+                </li>
+                <li>
+                    I don't notice any differences in the bump shader from a courseness of 16 to 128. However, there is a noticeable
+                    difference in the displacement shader. Because the courseness is higher, the displacement shader appears to be able to
+                    make sharper, more complex edges.
+                </li>
+            </ul>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_bump_sphere.png" width="480px" />
+                            <figcaption align="middle">bump sphere</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_bump_cloth.png" width="480px" />
+                            <figcaption align="middle">bump cloth</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_disp_sphere.png" width="480px" />
+                            <figcaption align="middle">displacement sphere</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_disp_cloth.png" width="480px" />
+                            <figcaption align="middle">displacement cloth</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_bump_sphere_16.png" width="480px" />
+                            <figcaption align="middle">bump sphere 16</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_bump_sphere_128.png" width="480px" />
+                            <figcaption align="middle">bump sphere 128</figcaption>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_disp_sphere_16.png" width="480px" />
+                            <figcaption align="middle">displacement sphere 16</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_disp_sphere_128.png" width="480px" />
+                            <figcaption align="middle">displacement sphere 128</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <li><i>Show a screenshot of your mirror shader on the cloth and on the sphere.</i></li>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_mir_sphere.png" width="480px" />
+                            <figcaption align="middle">mirror sphere</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_mir_cloth.png" width="480px" />
+                            <figcaption align="middle">mirror cloth</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <li><b><i>EXTRA CREDIT: </b>Explain what you did in your custom shader, if you made one.</i></li>
+            <ul>
+                <li>I didn't do much, but I remember watching a video on Half-Life: Alyx's liquid in bottle shaders a long time 
+                that I wanted to try replicating. I read the article and it's totally doable given time since it pretty much
+                uses springs to simulate the liquids, but I don't really have the time right now.</li>
+                <li>What I did do was, after seeing the bubbles/foam in the article, realize I could easily add noise to any shader.
+                So I added a pseudorandom noise to the mirror shader just to see what would happen and I think I've stumbled on a 
+                pretty solid way of creating a dirty mirror (like car side mirrors, for example). </li>
+                <li>
+                    <a href="https://80.lv/articles/simulating-liquids-in-a-bottle-with-a-shader/">Article on making the Half-Life: Alyx's liquids in bottles</a>
+                </li>
+                <li>
+                    <a href="https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl">Pseudorandom noise function source</a>
+                </li>
+            </ul>
+            <div align="center">
+                <table style="width=100%">
+                    <tr>
+                        <td align="middle">
+                            <img src="images/part5_mir_sphere_noise.png" width="480px" />
+                            <figcaption align="middle">dirty mirror sphere</figcaption>
+                        </td>
+                        <td align="middle">
+                            <img src="images/part5_mir_cloth_noise.png" width="480px" />
+                            <figcaption align="middle">dirty mirror cloth</figcaption>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </ul>
+
+        <a href="https://cal-cs184-student.github.io/sp22-project-webpages-18jwong/proj4/index.html">Link to Project 4 webpage</a>
+    </div></body>
 </html>
